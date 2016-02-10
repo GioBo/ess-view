@@ -2,7 +2,7 @@
 
 ## Summary
 
-A minor-mode to view *R* dataframes within a spreadsheet software.
+A minor-mode to view **R** dataframes within a spreadsheet software.
 
 
 ## Why use ess-view?
@@ -26,12 +26,21 @@ build the project.
 ## Usage
 
 	
-Within the cursor inside a buffer running a *R* process, simply hit
+If you want to have a look at a dataframe simply hit (a buffer running a **R** process)
 
     C-x w
 
  and you will be asked for the name of the object (dataframe) to view... it's a simple as that!
 
+
+If you would like to modify the dataframe within the spreadsheet software and then have the modified version
+saved in the original **R** dataframe, use:
+
+    C-x q
+
+When you've finished modifying the datasets, save the file (depending on the spreadsheet software you use, you may
+be asked if you want to save the file as a *csv* file and/or you want to overwrite the original file: the answer to
+both question is *yes*).
 
 
 ## Contributing
