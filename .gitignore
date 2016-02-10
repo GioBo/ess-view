@@ -1,0 +1,18 @@
+# Generated files
+*~
+*.elc
+*-pkg.el
+*.tar
+TAGS
+doc/ess-view.texi
+doc/ess-view.info
+
+# Packages
+elpa
+/.cask
+dist
+
+# Ecukes
+/features/project/.cask
+/features/project/test/*.el
+.ecukes-failing-scenarios
