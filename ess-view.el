@@ -22,7 +22,7 @@
 
 ;;; Commentary:
 
-;; A small package to view dataframes within spreadsheet softwares
+;; A small package to view dataframes using spreadsheet softwares
 
 ;;; Code:
 
@@ -70,8 +70,8 @@ it to a spreadsheet file."
 
 (defun create_env()
   "Creates a temporary environment (in order not to pollute
-user's environments) where temporary copy of the passed object
-is going to be created and prepared for converting to .csv"
+user's environments) where a temporary copy of the passed object
+is going to be created and prepared for conversion to .csv"
   (interactive)
   (let*
       ((nome_env (random_string)))
@@ -97,7 +97,7 @@ Argument STRINGA  is the command - as a string - to be passed to the R process."
   "This function cleans the dataframe of interest.
 Factors are converted to characters (less problems when exporting), NA and
 'NA' are removed so that reading the dataset within the spreadsheet software
- is clearer.
+is clearer.
 Argument OBJ is the name of the dataframe to be cleaned."
   (send_to_R (format "%s[sapply(%s,is.factor)]<-lapply(%s[sapply(%s,is.factor)],as.character)" obj obj obj obj))
   (send_to_R (format "%s[is.na(%s)]<-''\n" obj obj))
@@ -155,12 +155,12 @@ to the R dataframe."
       (send_to_R (format "%s <- read.table('%s',header=TRUE,sep=',',stringsAsFactors=FALSE)\n" oggetto temp_file))
       )
     ))
-   ;; else
 )
 
 
 (defun check_separator(filePath)
-;;  (interactive)
+  "This is a tentative strategy for obtaining a file separated by commas
+reagardless of the default field separator used by the spreadsheet software."
   (setq testo (s-split "\n" (f-read filePath) t))
   (setq testo (mapcar (lambda(x)(s-replace-all '(("\t" . ",") ("|" . ",")  (";" . ",") ) x)) testo))
   (setq testo (s-join "\n" testo))

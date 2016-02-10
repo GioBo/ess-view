@@ -27,6 +27,7 @@
 
 (require 'ert)
 
+
 (provide 'ess-view-tests)
 
 ;;; ess-view-tests.el ends here
