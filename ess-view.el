@@ -33,7 +33,7 @@
 (require 's)
 
 
-(defvar   spreadsheet_program  (or
+(defvar   ess-view--spreadsheet_program  (or
 	     (executable-find "libreoffice")
 	     (executable-find "openoffice")
 	     (executable-find "gnumeric"))
@@ -55,16 +55,16 @@ it to a spreadsheet file."
 (defun random_string()
   "This function create a random string of 20 characters"
   (interactive)
-  (setq rand_str "")
+  (setq ess-view--rand_str "")
   (let ((mycharset '("a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q" "r" "s" "t" "y" "v" "w" "x" "y" "z")))
     (dotimes (i 20)
-      (setq rand_str (
-		      concat rand_str (elt mycharset (random (length mycharset)))
+      (setq ess-view--rand_str (
+		      concat ess-view--rand_str (elt mycharset (random (length mycharset)))
 			     )
 	    )
       )
     )
-  rand_str
+  ess-view--rand_str
   )
 
 
@@ -133,7 +133,7 @@ version of the dataframe in the original object."
     (sit-for 1)
     (setq finestre (current-window-configuration))
     ;; start the spreadsheet software to open the temp csv file
-    (setq proc (start-process  "spreadsheet" nil  spreadsheet_program  temp_file))
+    (setq proc (start-process  "spreadsheet" nil  ess-view--spreadsheet_program  temp_file))
     (if save
 	(set-process-sentinel  proc 'write--sentinel)
       )
