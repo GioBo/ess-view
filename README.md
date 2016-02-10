@@ -26,6 +26,12 @@ build the project.
 ## Usage
 
 	
+Within the cursor inside a buffer running a *R* process, simply hit
+
+    C-x w
+
+ and you will be asked for the name of the object (dataframe) to view... it's a simple as that!
+
 
 
 ## Contributing
