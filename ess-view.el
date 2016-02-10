@@ -1,6 +1,6 @@
 ;;; ess-view.el --- A small package to view dataframes within spreadsheet softwares
 
-;; Copyright (C) 2016 boccigionata
+;; Copyright (C) 2016 Bocci Gionata
 
 ;; Author: boccigionata <boccigionata@gmail.com>
 ;; Version: 0.1
