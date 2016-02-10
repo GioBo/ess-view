@@ -34,7 +34,7 @@ If you want to have a look at a dataframe simply hit (a buffer running a **R** p
 
 
 If you would like to modify the dataframe within the spreadsheet software and then have the modified version
-saved in the original **R** dataframe, use:
+loaded back in the original **R** dataframe, use:
 
     C-x q
 
