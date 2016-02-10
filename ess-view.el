@@ -26,9 +26,13 @@
 
 ;;; Code:
 
-
-
+(require 'ess)
+(require 'ess-inf)
 (require 'ess-site)
+
+
+
+
 
 
 (defvar   spreadsheet_program  (or
@@ -130,7 +134,7 @@ is going to be created and prepared for converting to .csv"
   )
   
 
-(defun ess-view()
+(defun ess-view-df()
   (interactive)
   (setq oggetto (ess-read-object-name "object to inspect:"))
   ;;(setq oggetto (car oggetto))
@@ -144,11 +148,19 @@ is going to be created and prepared for converting to .csv"
    )
   )
 
-(global-set-key (kbd "C-x w") 'ess-view)
-;;(message system-type)
+;;(global-set-key (kbd "C-x w") 'ess-view-df)
 
 
-   
+(define-minor-mode ess-view-mode
+  "Have a look ad dataframes."
+  :lighter " ess-v"
+  :keymap (let ((map (make-sparse-keymap)))
+            (define-key map (kbd "C-x w") 'ess-view-df)
+            map)
+  )
+
+
+(add-hook 'ess-post-run-hook 'ess-view-mode)
 (provide 'ess-view)
 
 
