@@ -29,6 +29,8 @@
 (require 'ess)
 (require 'ess-inf)
 (require 'ess-site)
+(require 'f)
+(require 's)
 
 
 (defvar   spreadsheet_program  (or
@@ -87,7 +89,7 @@ is going to be created and prepared for converting to .csv"
 
 (defun send_to_R (stringa)
   "A wrapper function to send commands to the R process.
-Argument stringa  is the command - as a string - to be passed to the R process."
+Argument STRINGA  is the command - as a string - to be passed to the R process."
   (ess-send-string (get-process "R") stringa  nil)
   )
 
@@ -102,11 +104,14 @@ Argument OBJ is the name of the dataframe to be cleaned."
   (send_to_R (format "%s[%s=='NA']<-''\n" obj obj ))
   )
   
-(defun data_frame_view (object)
-"This function is used in case the passed OBJECT is a data frame."
+(defun data_frame_view (object save)
+"This function is used in case the passed OBJECT is a data frame.
+Argument SAVE if t means that the user wants to store the spreadsheet-modified
+version of the dataframe in the original object."
 ;;  (interactive)
   (save-excursion
 
+    (setq oggetto object)
     ;; create a temp environment where we will work
     (setq envir (create_env))
     (ess-send-string (get-process "R") (concat envir"<-new.env()\n") nil)
@@ -122,19 +127,45 @@ Argument OBJ is the name of the dataframe to be cleaned."
     ;; create a csv temp file
     (setq temp_file (make-temp-file nil nil ".csv"))
     ;; write the passed object to the csv tempfile
-    (setq stringa  (concat "write.table(" newobj ",file='" temp_file "',sep=',',row.names=FALSE)\n"))
+    (setq stringa  (concat "write.table(" newobj ",file='" temp_file "',sep='|',row.names=FALSE)\n"))
     (ess-send-string (get-process "R") stringa)
     ;; wait a little just to be sure that the file has been written (is this necessary? to be checked)
     (sit-for 1)
     (setq finestre (current-window-configuration))
     ;; start the spreadsheet software to open the temp csv file
-    (start-process  "prova" nil  spreadsheet_program  temp_file)
+    (setq proc (start-process  "spreadsheet" nil  spreadsheet_program  temp_file))
+    (if save
+	(set-process-sentinel  proc 'write--sentinel)
+      )
+
     (set-window-configuration finestre)
     ;; remove the temporary environment
     (ess-send-string (get-process "R") (format "rm(%s)" envir))
     )
   )
-  
+
+(defun write--sentinel (process signal)
+  "Chech the spreadsheet (PROCESS) to intercepts when it is closed (SIGNAL).
+The saved version of the file - in the csv fomat -is than converted back
+to the R dataframe."
+  (cond
+   ((equal signal "finished\n")
+    (progn
+      (check_separator temp_file)
+      (send_to_R (format "%s <- read.table('%s',header=TRUE,sep=',',stringsAsFactors=FALSE)\n" oggetto temp_file))
+      )
+    ))
+   ;; else
+)
+
+
+(defun check_separator(filePath)
+;;  (interactive)
+  (setq testo (s-split "\n" (f-read filePath) t))
+  (setq testo (mapcar (lambda(x)(s-replace-all '(("\t" . ",") ("|" . ",")  (";" . ",") ) x)) testo))
+  (setq testo (s-join "\n" testo))
+  (f-write-text testo 'utf-8 filePath)
+)
 
 (defun ess-view-df()
   (interactive)
@@ -145,10 +176,26 @@ Argument OBJ is the name of the dataframe to be cleaned."
 
   (cond
    ((ess-boolean-command (concat "is.vector(" oggetto ")\n")) (print_vector oggetto))
-   ((ess-boolean-command (concat "is.data.frame(" oggetto ")\n")) (data_frame_view oggetto))
-   (t (message "the object is neither a vector or a data.frame; don't know how to show it"))
+   ((ess-boolean-command (concat "is.data.frame(" oggetto ")\n")) (data_frame_view oggetto nil))
+   (t (message "the object is neither a vector or a data.frame; don't know how to show it..."))
    )
   )
+
+
+(defun ess-modify-df()
+  (interactive)
+  (setq oggetto (ess-read-object-name "object to modify:"))
+  ;;(setq oggetto (car oggetto))
+  (setq oggetto (substring-no-properties (car oggetto)))
+  ;;(setq test (ess-boolean-command (concat "is.vector('" oggetto "')\n")))
+
+  (cond
+   ((ess-boolean-command (concat "is.vector(" oggetto ")\n")) (print_vector oggetto))
+   ((ess-boolean-command (concat "is.data.frame(" oggetto ")\n")) (data_frame_view oggetto t))
+   (t (message "the object is neither a vector or a data.frame; don't know how to show it..."))
+   )
+  )
+
 
 ;;(global-set-key (kbd "C-x w") 'ess-view-df)
 
@@ -158,6 +205,7 @@ Argument OBJ is the name of the dataframe to be cleaned."
   :lighter " ess-v"
   :keymap (let ((map (make-sparse-keymap)))
             (define-key map (kbd "C-x w") 'ess-view-df)
+	    (define-key map (kbd "C-x q") 'ess-modify-df)
             map)
   )
 
