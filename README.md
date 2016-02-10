@@ -2,7 +2,7 @@
 
 ## Summary
 
-A small package to view dataframes within a spreadsheet software
+A minor-mode to view *R* dataframes within a spreadsheet software.
 
 
 ## Why use ess-view?
@@ -11,7 +11,7 @@ A small package to view dataframes within a spreadsheet software
 I find it useful to be able to have a look at the dataframes I'm working with.
 Great tools already exist for doing this within R/ess (eg [DT](http://rstudio.github.io/DT/) or [ess-R-data-view](https://github.com/myuhe/ess-R-data-view.el)),
 but when working with quite big datasets I personally prefer to use a spreadsheet software.
- The =ess-view= minor mode simply provides functions to create a temporary csv copy of the dataframe of interest and then calls an external spreadsheet software to view it.
+ The *ess-view* minor mode simply provides functions to create a temporary csv copy of the dataframe of interest and then calls an external spreadsheet software to view it.
  
 ## Installing
 
