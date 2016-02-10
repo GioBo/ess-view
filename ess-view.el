@@ -40,6 +40,24 @@
   "Spreadsheet software to be used to show data."
     )
 
+(defvar ess-view--rand_str
+  "Random string to be used for temp files."
+  )
+
+(defvar ess-view-oggetto
+  "Name of the R dataframe to work with.")
+
+(defvar ess-view-newobj
+  "Temp name to be used for the temporary copy of R object")
+
+(defvar ess-view-temp-file
+  "Temporary file to be used to save the csv version of the dataframe")
+
+(defvar ess-view-string-command
+  "Command - as a string - to be passed to the R interpreter.")
+
+(defvar ess-view-spr-proc
+  "Process of the called spreadsheet software.")
 
 (defun print_vector(obj)
   " In case the passed object is a vector, print its
@@ -52,7 +70,8 @@ it to a spreadsheet file."
   )
 
 
-(defun random_string()
+(
+ defun random_string()
   "This function create a random string of 20 characters"
   (interactive)
   (setq ess-view--rand_str "")
@@ -87,10 +106,10 @@ is going to be created and prepared for conversion to .csv"
     )
 
 
-(defun send_to_R (stringa)
+(defun send_to_R (STRINGCMD)
   "A wrapper function to send commands to the R process.
-Argument STRINGA  is the command - as a string - to be passed to the R process."
-  (ess-send-string (get-process "R") stringa  nil)
+Argument STRINGCMD  is the command - as a string - to be passed to the R process."
+  (ess-send-string (get-process "R") STRINGCMD  nil)
   )
 
 (defun clean_data_frame (obj)
@@ -111,36 +130,40 @@ version of the dataframe in the original object."
 ;;  (interactive)
   (save-excursion
 
-    (setq oggetto object)
     ;; create a temp environment where we will work
-    (setq envir (create_env))
-    (ess-send-string (get-process "R") (concat envir"<-new.env()\n") nil)
-    ;; create a copy of the passed object in the custom environment
-    (ess-send-string (get-process "R") (concat envir "$obj<-" object "\n") nil)
-    ;; create a variable containing the complete name of the object
-    ;; (in the form environm$object
-    (setq newobj (concat envir "$obj"))
-    ;; remove NA and NAN so that objects is easier to read in spreadsheet file
-    (clean_data_frame newobj)
-    ;; (ess-send-string (get-process "R") (format "%s[is.na(%s)]<-''\n" newobj newobj ) nil)
-    ;; (ess-send-string (get-process "R") (format "%s[%s=='NA']<-''\n" newobj newobj ) nil)
-    ;; create a csv temp file
-    (setq temp_file (make-temp-file nil nil ".csv"))
-    ;; write the passed object to the csv tempfile
-    (setq stringa  (concat "write.table(" newobj ",file='" temp_file "',sep='|',row.names=FALSE)\n"))
-    (ess-send-string (get-process "R") stringa)
-    ;; wait a little just to be sure that the file has been written (is this necessary? to be checked)
-    (sit-for 1)
-    (setq finestre (current-window-configuration))
-    ;; start the spreadsheet software to open the temp csv file
-    (setq proc (start-process  "spreadsheet" nil  ess-view--spreadsheet_program  temp_file))
-    (if save
-	(set-process-sentinel  proc 'write--sentinel)
-      )
+    (let
+	((envir (create_env))
+	 (win_place (current-window-configuration))
+	 )
+      
+      (ess-send-string (get-process "R") (concat envir"<-new.env()\n") nil)
+      ;; create a copy of the passed object in the custom environment
+      (ess-send-string (get-process "R") (concat envir "$obj<-" object "\n") nil)
+      ;; create a variable containing the complete name of the object
+      ;; (in the form environm$object
+      (setq ess-view-newobj (concat envir "$obj"))
+      ;; remove NA and NAN so that objects is easier to read in spreadsheet file
+      (clean_data_frame ess-view-newobj)
+      ;; (ess-send-string (get-process "R") (format "%s[is.na(%s)]<-''\n" ess-view-newobj ess-view-newobj ) nil)
+      ;; (ess-send-string (get-process "R") (format "%s[%s=='NA']<-''\n" ess-view-newobj ess-view-newobj ) nil)
+      ;; create a csv temp file
+      (setq ess-view-temp-file (make-temp-file nil nil ".csv"))
+      ;; write the passed object to the csv tempfile
+      (setq ess-view-string-command  (concat "write.table(" ess-view-newobj ",file='" ess-view-temp-file "',sep='|',row.names=FALSE)\n"))
+      (ess-send-string (get-process "R") ess-view-string-command)
+      ;; wait a little just to be sure that the file has been written (is this necessary? to be checked)
+      (sit-for 1)
 
-    (set-window-configuration finestre)
-    ;; remove the temporary environment
-    (ess-send-string (get-process "R") (format "rm(%s)" envir))
+      ;; start the spreadsheet software to open the temp csv file
+      (setq ess-view-spr-proc (start-process  "spreadsheet" nil  ess-view--spreadsheet_program  ess-view-temp-file))
+      (if save
+	  (set-process-sentinel  ess-view-spr-proc 'write--sentinel)
+	)
+
+      (set-window-configuration win_place)
+      ;; remove the temporary environment
+      (ess-send-string (get-process "R") (format "rm(%s)" envir))
+      )
     )
   )
 
@@ -151,8 +174,8 @@ to the R dataframe."
   (cond
    ((equal signal "finished\n")
     (progn
-      (check_separator temp_file)
-      (send_to_R (format "%s <- read.table('%s',header=TRUE,sep=',',stringsAsFactors=FALSE)\n" oggetto temp_file))
+      (check_separator ess-view-temp-file)
+      (send_to_R (format "%s <- read.table('%s',header=TRUE,sep=',',stringsAsFactors=FALSE)\n" ess-view-oggetto ess-view-temp-file))
       )
     ))
 )
@@ -161,22 +184,24 @@ to the R dataframe."
 (defun check_separator(filePath)
   "This is a tentative strategy for obtaining a file separated by commas
 reagardless of the default field separator used by the spreadsheet software."
-  (setq testo (s-split "\n" (f-read filePath) t))
-  (setq testo (mapcar (lambda(x)(s-replace-all '(("\t" . ",") ("|" . ",")  (";" . ",") ) x)) testo))
-  (setq testo (s-join "\n" testo))
-  (f-write-text testo 'utf-8 filePath)
-)
+  (let
+      ((testo (s-split "\n" (f-read filePath) t)))
+    (setq testo (mapcar (lambda(x)(s-replace-all '(("\t" . ",") ("|" . ",")  (";" . ",") ) x)) testo))
+    (setq testo (s-join "\n" testo))
+    (f-write-text testo 'utf-8 filePath)
+    )
+  )
 
 (defun ess-view-df()
   (interactive)
-  (setq oggetto (ess-read-object-name "object to inspect:"))
-  ;;(setq oggetto (car oggetto))
-  (setq oggetto (substring-no-properties (car oggetto)))
-  ;;(setq test (ess-boolean-command (concat "is.vector('" oggetto "')\n")))
+  (setq ess-view-oggetto (ess-read-object-name "object to inspect:"))
+  ;;(setq ess-view-oggetto (car ess-view-oggetto))
+  (setq ess-view-oggetto (substring-no-properties (car ess-view-oggetto)))
+  ;;(setq test (ess-boolean-command (concat "is.vector('" ess-view-oggetto "')\n")))
 
   (cond
-   ((ess-boolean-command (concat "is.vector(" oggetto ")\n")) (print_vector oggetto))
-   ((ess-boolean-command (concat "is.data.frame(" oggetto ")\n")) (data_frame_view oggetto nil))
+   ((ess-boolean-command (concat "is.vector(" ess-view-oggetto ")\n")) (print_vector ess-view-oggetto))
+   ((ess-boolean-command (concat "is.data.frame(" ess-view-oggetto ")\n")) (data_frame_view ess-view-oggetto nil))
    (t (message "the object is neither a vector or a data.frame; don't know how to show it..."))
    )
   )
@@ -184,14 +209,14 @@ reagardless of the default field separator used by the spreadsheet software."
 
 (defun ess-modify-df()
   (interactive)
-  (setq oggetto (ess-read-object-name "object to modify:"))
-  ;;(setq oggetto (car oggetto))
-  (setq oggetto (substring-no-properties (car oggetto)))
-  ;;(setq test (ess-boolean-command (concat "is.vector('" oggetto "')\n")))
+  (setq ess-view-oggetto (ess-read-object-name "object to modify:"))
+  ;;(setq ess-view-oggetto (car ess-view-oggetto))
+  (setq ess-view-oggetto (substring-no-properties (car ess-view-oggetto)))
+  ;;(setq test (ess-boolean-command (concat "is.vector('" ess-view-oggetto "')\n")))
 
   (cond
-   ((ess-boolean-command (concat "is.vector(" oggetto ")\n")) (print_vector oggetto))
-   ((ess-boolean-command (concat "is.data.frame(" oggetto ")\n")) (data_frame_view oggetto t))
+   ((ess-boolean-command (concat "is.vector(" ess-view-oggetto ")\n")) (print_vector ess-view-oggetto))
+   ((ess-boolean-command (concat "is.data.frame(" ess-view-oggetto ")\n")) (data_frame_view ess-view-oggetto t))
    (t (message "the object is neither a vector or a data.frame; don't know how to show it..."))
    )
   )
