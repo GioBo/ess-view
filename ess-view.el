@@ -31,15 +31,11 @@
 (require 'ess-site)
 
 
-
-
-
-
 (defvar   spreadsheet_program  (or
 	     (executable-find "libreoffice")
 	     (executable-find "openoffice")
-	     (executable-find "gnumeric"))			 
-  "Spreadsheet software to be used to show data"
+	     (executable-find "gnumeric"))
+  "Spreadsheet software to be used to show data."
     )
 
 
@@ -90,24 +86,30 @@ is going to be created and prepared for converting to .csv"
 
 
 (defun send_to_R (stringa)
+  "A wrapper function to send commands to the R process.
+Argument stringa  is the command - as a string - to be passed to the R process."
   (ess-send-string (get-process "R") stringa  nil)
   )
 
 (defun clean_data_frame (obj)
-  (interactive)
+  "This function cleans the dataframe of interest.
+Factors are converted to characters (less problems when exporting), NA and
+'NA' are removed so that reading the dataset within the spreadsheet software
+ is clearer.
+Argument OBJ is the name of the dataframe to be cleaned."
   (send_to_R (format "%s[sapply(%s,is.factor)]<-lapply(%s[sapply(%s,is.factor)],as.character)" obj obj obj obj))
   (send_to_R (format "%s[is.na(%s)]<-''\n" obj obj))
   (send_to_R (format "%s[%s=='NA']<-''\n" obj obj ))
   )
   
 (defun data_frame_view (object)
-" This function is used in case the passed object is a data frame"
-  (interactive)
+"This function is used in case the passed OBJECT is a data frame."
+;;  (interactive)
   (save-excursion
 
     ;; create a temp environment where we will work
     (setq envir (create_env))
-    (ess-send-string (get-process "R") (concat envir"<-new.env()\n") nil) 
+    (ess-send-string (get-process "R") (concat envir"<-new.env()\n") nil)
     ;; create a copy of the passed object in the custom environment
     (ess-send-string (get-process "R") (concat envir "$obj<-" object "\n") nil)
     ;; create a variable containing the complete name of the object
@@ -119,7 +121,7 @@ is going to be created and prepared for converting to .csv"
     ;; (ess-send-string (get-process "R") (format "%s[%s=='NA']<-''\n" newobj newobj ) nil)
     ;; create a csv temp file
     (setq temp_file (make-temp-file nil nil ".csv"))
-    ;; write the passed object to the csv tempfile 
+    ;; write the passed object to the csv tempfile
     (setq stringa  (concat "write.table(" newobj ",file='" temp_file "',sep=',',row.names=FALSE)\n"))
     (ess-send-string (get-process "R") stringa)
     ;; wait a little just to be sure that the file has been written (is this necessary? to be checked)
