@@ -4,6 +4,7 @@
 
 ;; Author: boccigionata <boccigionata@gmail.com>
 ;; Version: 0.1
+;; Package-Requires: ((ess "15"))
 
 ;; This file is not part of GNU Emacs.
 
