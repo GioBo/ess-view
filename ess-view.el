@@ -5,7 +5,7 @@
 ;; Author: boccigionata <boccigionata@gmail.com>
 ;; URL: https://github.com/GioBo/ess-view
 ;; Version: 0.1
-;; Package-Requires: ((ess "15") (ess-inf) (ess-site)  (s "1.8.0") (f "0.16.0"))
+;; Package-Requires: ((ess "15") (ess-inf "0") (ess-site "0")  (s "1.8.0") (f "0.16.0"))
 ;; Keywords: ess
 
 
@@ -61,11 +61,19 @@
 (require 's)
 
 
-(defvar ess-view--spreadsheet_program (or
+(defvar ess-view--spreadsheet-program (or
 				       (executable-find "libreoffice")
 				       (executable-find "openoffice")
-				       (executable-find "gnumeric"))
+				       (executable-find "gnumeric")
+				       (executable-find "soffice"))
+  
   "Spreadsheet software to be used to show data.")
+
+
+(defvar  deh (or
+	      (executable-find "gatto")
+	      nil)
+     "docstring")
 
 (defvar ess-view--rand-str
   "Random string to be used for temp files.")
@@ -177,7 +185,7 @@ version of the dataframe in the original object."
       (sit-for 1)
 
       ;; start the spreadsheet software to open the temp csv file
-      (setq ess-view-spr-proc (start-process "spreadsheet" nil ess-view--spreadsheet_program ess-view-temp-file))
+      (setq ess-view-spr-proc (start-process "spreadsheet" nil ess-view--spreadsheet-program ess-view-temp-file))
       (if save
 	  (set-process-sentinel ess-view-spr-proc 'ess-view-write--sentinel))
 
