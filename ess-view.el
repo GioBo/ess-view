@@ -1,10 +1,13 @@
-;;; ess-view.el --- A small package to view dataframes within spreadsheet softwares
+;;; ess-view.el --- View R dataframes in a spreadsheet software
 
 ;; Copyright (C) 2016 Bocci Gionata
 
 ;; Author: boccigionata <boccigionata@gmail.com>
+;; URL: https://github.com/GioBo/ess-view
 ;; Version: 0.1
-;; Package-Requires: ((ess "15"))
+;; Package-Requires: ((ess "15") (ess-inf) (ess-site)  (s "1.8.0") (f "0.16.0"))
+;; Keywords: ess
+
 
 ;; This file is not part of GNU Emacs.
 
@@ -23,7 +26,31 @@
 
 ;;; Commentary:
 
-;; A small package to view dataframes using spreadsheet softwares
+
+;; When working with big R dataframes, the console is impractical for looking at
+;; its content; a spreadsheet software is a much more convenient tool for this task.
+;; This package allows users to have a look at R dataframes in an external
+;; spreadsheet software.
+
+;; If you simply want to have a look at a dataframe simply hit (inside a buffer running
+;; an R process)
+
+;; C-x w
+
+;; and you will be asked for the name of the object (dataframe) to
+;; view... it's a simple as that!
+
+;; If you would like to modify the dataframe within the spreadsheet
+;; software and then have the modified version loaded back in the
+;; original R dataframe, use:
+
+;; C-x q
+
+;; When you've finished modifying the dataset, save the file (depending
+;; on the spreadsheet software you use, you may be asked if you want to
+;; save the file as a csv file and/or you want to overwrite the original
+;; file: the answer to both question is yes) and the file content will be
+;; saved in the original R dataframe.
 
 ;;; Code:
 
@@ -34,16 +61,14 @@
 (require 's)
 
 
-(defvar   ess-view--spreadsheet_program  (or
-	     (executable-find "libreoffice")
-	     (executable-find "openoffice")
-	     (executable-find "gnumeric"))
-  "Spreadsheet software to be used to show data."
-    )
+(defvar ess-view--spreadsheet_program (or
+				       (executable-find "libreoffice")
+				       (executable-find "openoffice")
+				       (executable-find "gnumeric"))
+  "Spreadsheet software to be used to show data.")
 
-(defvar ess-view--rand_str
-  "Random string to be used for temp files."
-  )
+(defvar ess-view--rand-str
+  "Random string to be used for temp files.")
 
 (defvar ess-view-oggetto
   "Name of the R dataframe to work with.")
@@ -60,115 +85,50 @@
 (defvar ess-view-spr-proc
   "Process of the called spreadsheet software.")
 
-(defun print_vector(obj)
-  " In case the passed object is a vector, print its
-content in another temporart buffer instead of saving
-it to a spreadsheet file."
+(defun ess-view-print-vector (obj)
+  "Print content of vector OBJ in another buffer.
+In case the passed object is a vector it is not convenient to use
+an external spreadsheet sofware to look at its content."
   (let
       ((header (concat obj " contains the following elements: \n")))
-    (ess-execute (concat "cat(" obj ",sep='\n')") nil "*BUFF*" header)
-    )
-  )
+    (ess-execute (concat "cat(" obj ",sep='\n')") nil "*BUFF*" header)))
 
 
-(
- defun random_string()
-  "This function create a random string of 20 characters"
+(defun ess-view-random-string ()
+  "This function create a random string of 20 characters."
   (interactive)
-  (setq ess-view--rand_str "")
+  (setq ess-view--rand-str "")
   (let ((mycharset '("a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q" "r" "s" "t" "y" "v" "w" "x" "y" "z")))
     (dotimes (i 20)
-      (setq ess-view--rand_str (
-		      concat ess-view--rand_str (elt mycharset (random (length mycharset)))
-			     )
-	    )
-      )
-    )
-  ess-view--rand_str
-  )
+      (setq ess-view--rand-str (concat ess-view--rand-str (elt mycharset (random (length mycharset)))))))
+  ess-view--rand-str)
 
 
-(defun create_env()
-  "Creates a temporary environment (in order not to pollute
-user's environments) where a temporary copy of the passed object
-is going to be created and prepared for conversion to .csv"
+(defun ess-view-create-env ()
+  "Create a temporary R environment.
+This is done in order not to pollute user's environments with a temporary
+copy of the passed object which is used to create the temporary .csv file."
   (interactive)
   (let*
-      ((nome_env (random_string)))
+      ((nome_env
+	(ess-view-random-string)))
     ;; it is very unlikely that the user has an environment which
     ;; has the same name of our random generated 20-char string,
     ;; but just to be sure, we run this cycle recursively
     ;; until we find an environment name which does not exist yet
-    (if (ess-boolean-command (concat "is.environment(" nome_env ")\n"))
-	  (create_env)
-	  )
-        nome_env
-      )
-    )
+    (if
+	(ess-boolean-command
+	 (concat "is.environment(" nome_env ")\n"))
+	(ess-view-create-env))
+    nome_env))
 
 
-(defun send_to_R (STRINGCMD)
+(defun ess-view-send-to-R (STRINGCMD)
   "A wrapper function to send commands to the R process.
 Argument STRINGCMD  is the command - as a string - to be passed to the R process."
-  (ess-send-string (get-process "R") STRINGCMD  nil)
-  )
+  (ess-send-string (get-process "R") STRINGCMD nil))
 
-(defun clean_data_frame (obj)
-  "This function cleans the dataframe of interest.
-Factors are converted to characters (less problems when exporting), NA and
-'NA' are removed so that reading the dataset within the spreadsheet software
-is clearer.
-Argument OBJ is the name of the dataframe to be cleaned."
-  (send_to_R (format "%s[sapply(%s,is.factor)]<-lapply(%s[sapply(%s,is.factor)],as.character)" obj obj obj obj))
-  (send_to_R (format "%s[is.na(%s)]<-''\n" obj obj))
-  (send_to_R (format "%s[%s=='NA']<-''\n" obj obj ))
-  )
-  
-(defun data_frame_view (object save)
-"This function is used in case the passed OBJECT is a data frame.
-Argument SAVE if t means that the user wants to store the spreadsheet-modified
-version of the dataframe in the original object."
-;;  (interactive)
-  (save-excursion
-
-    ;; create a temp environment where we will work
-    (let
-	((envir (create_env))
-	 (win_place (current-window-configuration))
-	 )
-      
-      (ess-send-string (get-process "R") (concat envir"<-new.env()\n") nil)
-      ;; create a copy of the passed object in the custom environment
-      (ess-send-string (get-process "R") (concat envir "$obj<-" object "\n") nil)
-      ;; create a variable containing the complete name of the object
-      ;; (in the form environm$object
-      (setq ess-view-newobj (concat envir "$obj"))
-      ;; remove NA and NAN so that objects is easier to read in spreadsheet file
-      (clean_data_frame ess-view-newobj)
-      ;; (ess-send-string (get-process "R") (format "%s[is.na(%s)]<-''\n" ess-view-newobj ess-view-newobj ) nil)
-      ;; (ess-send-string (get-process "R") (format "%s[%s=='NA']<-''\n" ess-view-newobj ess-view-newobj ) nil)
-      ;; create a csv temp file
-      (setq ess-view-temp-file (make-temp-file nil nil ".csv"))
-      ;; write the passed object to the csv tempfile
-      (setq ess-view-string-command  (concat "write.table(" ess-view-newobj ",file='" ess-view-temp-file "',sep='|',row.names=FALSE)\n"))
-      (ess-send-string (get-process "R") ess-view-string-command)
-      ;; wait a little just to be sure that the file has been written (is this necessary? to be checked)
-      (sit-for 1)
-
-      ;; start the spreadsheet software to open the temp csv file
-      (setq ess-view-spr-proc (start-process  "spreadsheet" nil  ess-view--spreadsheet_program  ess-view-temp-file))
-      (if save
-	  (set-process-sentinel  ess-view-spr-proc 'write--sentinel)
-	)
-
-      (set-window-configuration win_place)
-      ;; remove the temporary environment
-      (ess-send-string (get-process "R") (format "rm(%s)" envir))
-      )
-    )
-  )
-
-(defun write--sentinel (process signal)
+(defun ess-view-write--sentinel (process signal)
   "Chech the spreadsheet (PROCESS) to intercepts when it is closed (SIGNAL).
 The saved version of the file - in the csv fomat -is than converted back
 to the R dataframe."
@@ -176,24 +136,69 @@ to the R dataframe."
    ((equal signal "finished\n")
     (progn
       (check_separator ess-view-temp-file)
-      (send_to_R (format "%s <- read.table('%s',header=TRUE,sep=',',stringsAsFactors=FALSE)\n" ess-view-oggetto ess-view-temp-file))
-      )
-    ))
-)
+      (ess-view-send-to-R (format "%s <- read.table('%s',header=TRUE,sep=',',stringsAsFactors=FALSE)\n" ess-view-oggetto ess-view-temp-file))))))
+  
+(defun ess-view-clean-data-frame (obj)
+  "This function cleans the dataframe of interest.
+Factors are converted to characters (less problems when exporting), NA and
+'NA' are removed so that reading the dataset within the spreadsheet software
+is clearer.
+Argument OBJ is the name of the dataframe to be cleaned."
+  (ess-view-send-to-R (format "%s[sapply(%s,is.factor)]<-lapply(%s[sapply(%s,is.factor)],as.character)" obj obj obj obj))
+  (ess-view-send-to-R (format "%s[is.na(%s)]<-''\n" obj obj))
+  (ess-view-send-to-R (format "%s[%s=='NA']<-''\n" obj obj)))
+
+(defun ess-view-data-frame-view (object save)
+  "This function is used in case the passed OBJECT is a data frame.
+Argument SAVE if t means that the user wants to store the spreadsheet-modified
+version of the dataframe in the original object."
+  ;;  (interactive)
+  (save-excursion
+
+    ;; create a temp environment where we will work
+    (let
+	((envir (ess-view-create-env))
+	 (win_place (current-window-configuration)))
+
+      (ess-send-string (get-process "R") (concat envir "<-new.env()\n") nil)
+      ;; create a copy of the passed object in the custom environment
+      (ess-send-string (get-process "R") (concat envir "$obj<-" object "\n") nil)
+      ;; create a variable containing the complete name of the object
+      ;; (in the form environm$object
+      (setq ess-view-newobj (concat envir "$obj"))
+      ;; remove NA and NAN so that objects is easier to read in spreadsheet file
+      (ess-view-clean-data-frame ess-view-newobj)
+      ;; create a csv temp file
+      (setq ess-view-temp-file (make-temp-file nil nil ".csv"))
+      ;; write the passed object to the csv tempfile
+      (setq ess-view-string-command (concat "write.table(" ess-view-newobj ",file='" ess-view-temp-file "',sep='|',row.names=FALSE)\n"))
+      (ess-send-string (get-process "R") ess-view-string-command)
+      ;; wait a little just to be sure that the file has been written (is this necessary? to be checked)
+      (sit-for 1)
+
+      ;; start the spreadsheet software to open the temp csv file
+      (setq ess-view-spr-proc (start-process "spreadsheet" nil ess-view--spreadsheet_program ess-view-temp-file))
+      (if save
+	  (set-process-sentinel ess-view-spr-proc 'ess-view-write--sentinel))
+
+      (set-window-configuration win_place)
+      ;; remove the temporary environment
+      (ess-send-string (get-process "R") (format "rm(%s)" envir)))))
 
 
-(defun check_separator(filePath)
-  "This is a tentative strategy for obtaining a file separated by commas
-reagardless of the default field separator used by the spreadsheet software."
+(defun check_separator (filePath)
+  "Try to convert the tmp file to the csv format.
+This is a tentative strategy to obtain a csv content from the file - specified
+by FILEPATH - separated by commas, reagardless of the default field separator
+used by the spreadsheet software."
   (let
       ((testo (s-split "\n" (f-read filePath) t)))
-    (setq testo (mapcar (lambda(x)(s-replace-all '(("\t" . ",") ("|" . ",")  (";" . ",") ) x)) testo))
+    (setq testo (mapcar (lambda (x) (s-replace-all '(("\t" . ",") ("|" . ",") (";" . ",")) x)) testo))
     (setq testo (s-join "\n" testo))
-    (f-write-text testo 'utf-8 filePath)
-    )
-  )
+    (f-write-text testo 'utf-8 filePath)))
 
-(defun ess-view-df()
+(defun ess-view-inspect-df ()
+  "Used to view the content of the dataframe."
   (interactive)
   (setq ess-view-oggetto (ess-read-object-name "object to inspect:"))
   ;;(setq ess-view-oggetto (car ess-view-oggetto))
@@ -201,14 +206,13 @@ reagardless of the default field separator used by the spreadsheet software."
   ;;(setq test (ess-boolean-command (concat "is.vector('" ess-view-oggetto "')\n")))
 
   (cond
-   ((ess-boolean-command (concat "is.vector(" ess-view-oggetto ")\n")) (print_vector ess-view-oggetto))
-   ((ess-boolean-command (concat "is.data.frame(" ess-view-oggetto ")\n")) (data_frame_view ess-view-oggetto nil))
-   (t (message "the object is neither a vector or a data.frame; don't know how to show it..."))
-   )
-  )
+   ((ess-boolean-command (concat "is.vector(" ess-view-oggetto ")\n")) (ess-view-print-vector ess-view-oggetto))
+   ((ess-boolean-command (concat "is.data.frame(" ess-view-oggetto ")\n")) (ess-view-data-frame-view ess-view-oggetto nil))
+   (t (message "the object is neither a vector or a data.frame; don't know how to show it..."))))
 
 
-(defun ess-modify-df()
+(defun ess-view-modify-df ()
+  "Used to view and modify the object of interest."
   (interactive)
   (setq ess-view-oggetto (ess-read-object-name "object to modify:"))
   ;;(setq ess-view-oggetto (car ess-view-oggetto))
@@ -216,24 +220,19 @@ reagardless of the default field separator used by the spreadsheet software."
   ;;(setq test (ess-boolean-command (concat "is.vector('" ess-view-oggetto "')\n")))
 
   (cond
-   ((ess-boolean-command (concat "is.vector(" ess-view-oggetto ")\n")) (print_vector ess-view-oggetto))
-   ((ess-boolean-command (concat "is.data.frame(" ess-view-oggetto ")\n")) (data_frame_view ess-view-oggetto t))
-   (t (message "the object is neither a vector or a data.frame; don't know how to show it..."))
-   )
-  )
+   ((ess-boolean-command (concat "is.vector(" ess-view-oggetto ")\n")) (ess-view-print-vector ess-view-oggetto))
+   ((ess-boolean-command (concat "is.data.frame(" ess-view-oggetto ")\n")) (ess-view-data-frame-view ess-view-oggetto t))
+   (t (message "the object is neither a vector or a data.frame; don't know how to show it..."))))
 
-
-;;(global-set-key (kbd "C-x w") 'ess-view-df)
 
 
 (define-minor-mode ess-view-mode
   "Have a look ad dataframes."
   :lighter " ess-v"
   :keymap (let ((map (make-sparse-keymap)))
-            (define-key map (kbd "C-x w") 'ess-view-df)
-	    (define-key map (kbd "C-x q") 'ess-modify-df)
-            map)
-  )
+	    (define-key map (kbd "C-x w") 'ess-view-inspect-df)
+	    (define-key map (kbd "C-x q") 'ess-view-modify-df)
+	    map))
 
 
 (add-hook 'ess-post-run-hook 'ess-view-mode)
