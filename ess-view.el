@@ -2,12 +2,13 @@
 
 ;; Copyright (C) 2016 Bocci Gionata
 
-;; Author: boccigionata <boccigionata@gmail.com>
+;; Author: Bocci Gionata <boccigionata@gmail.com>
+;; Maintainer: Bocci Gionata <boccigionata@gmail.com>
 ;; URL: https://github.com/GioBo/ess-view
+;; Created: 2016-02-10
 ;; Version: 0.1
-;; Package-Requires: ((ess "15") (ess-inf "0") (ess-site "0")  (s "1.8.0") (f "0.16.0"))
-;; Keywords: ess
-
+;; Package-Requires: ((ess "15")  (s "1.8.0") (f "0.16.0"))
+;; Keywords: extensions, ess
 
 ;; This file is not part of GNU Emacs.
 

@@ -4,6 +4,8 @@
 (package-file "ess-view.el")
 
 (development
+ (depends-on "ess")
+ (depends-on "s")	
  (depends-on "ert")
  (depends-on "flycheck")
  (depends-on "flycheck-cask")
