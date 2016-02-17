@@ -15,11 +15,10 @@ but when working with quite big datasets I personally prefer to use a spreadshee
  
 ## Installing
 
-You will need Emacs 24+, `make` and [Cask](https://github.com/cask/cask) to
-build the project.
+`ess-view` is available through MELPA, so, if you can install it using:
+coffee-mode is available on MELPA and MELPA-STABLE.
 
-    cd ess-view
-    make && make install
+    M-x package-install [RET] ess-view [RET]
 
 
 
