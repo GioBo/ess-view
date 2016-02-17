@@ -16,7 +16,6 @@ but when working with quite big datasets I personally prefer to use a spreadshee
 ## Installing
 
 `ess-view` is available through MELPA, so, if you can install it using:
-coffee-mode is available on MELPA and MELPA-STABLE.
 
     M-x package-install [RET] ess-view [RET]
 
