@@ -235,7 +235,7 @@ it back in the R dataframe."
 	  (setq ess-view-oggetto (substring-no-properties (car ess-view-oggetto)))
 
 	  (cond
-	   ((ess-boolean-command (concat "esists(" ess-view-oggetto ")\n")) (message "The object does not exists"))
+	   ((ess-boolean-command (concat "exists(" ess-view-oggetto ")\n")) (message "The object does not exists"))
 	   ((ess-boolean-command (concat "is.vector(" ess-view-oggetto ")\n")) (ess-view-print-vector ess-view-oggetto))
 	   ((ess-boolean-command (concat "is.data.frame(" ess-view-oggetto ")\n")) (ess-view-data-frame-view ess-view-oggetto ess-view--save))
 	   (t (message "the object is neither a vector or a data.frame; don't know how to show it...")))))
