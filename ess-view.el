@@ -53,6 +53,15 @@
 ;; file: the answer to both question is yes) and the file content will be
 ;; saved in the original R dataframe.
 
+
+;; If these functions are called with the prefix argument 0, then the dataframes
+;; will be exported with their row.names, eg. use:
+
+;; C-u 0 C-x w  (to see the object)
+
+;; C-u 0 C-x q  (to see it and then have it saved back in the R dataframe)
+;;
+;;
 ;;; Code:
 
 (require 'ess)
@@ -156,7 +165,9 @@ Argument OBJ is the name of the dataframe to be cleaned."
 (defun ess-view-data-frame-view (object save row-names)
   "This function is used in case the passed OBJECT is a data frame.
 Argument SAVE if t means that the user wants to store the spreadsheet-modified
-version of the dataframe in the original object."
+version of the dataframe in the original object.
+Argument ROW-NAMES is either t or nil: in case it's true, user wants to save
+the row names of the dataframe as well."
   ;;  (interactive)
   (save-excursion
 
@@ -176,7 +187,7 @@ version of the dataframe in the original object."
       ;; create a csv temp file
       (setq ess-view-temp-file (make-temp-file nil nil ".csv"))
       (if row-names (setq row-names "row.names=TRUE,col.names=NA")
-        (setq row-names "row.names=FALSE"))
+	(setq row-names "row.names=FALSE"))
       ;; write the passed object to the csv tempfile
       (setq ess-view-string-command (concat "write.table(" ess-view-newobj ",file='" ess-view-temp-file "',sep=','," row-names ")\n"))
       (ess-send-string (get-process "R") ess-view-string-command)
@@ -223,12 +234,15 @@ used by the spreadsheet software."
   "Call other functions to inspect or save a dataframe.
 This function is bound to both \\C-\\x w and \\C-\\x q and according to the
 keybinding used, it either show the dataframe or shown AND later store
-it back in the R dataframe."
+it back in the R dataframe.
+If user wants the row names of the dataframe to be exported, then the prefix
+argument 0 must be provided before calling the function (eg. by using
+\\C-\\u 0 \\C-\\x w): the argument ESS-VIEW-ROW takes care of storing
+this prefix arg."
   (interactive "P")
   (if (eq ess-view-row 0)
       (setq ess-view-row t)
-      (setq ess-view-row nil)
-    )
+    (setq ess-view-row nil))
   (if ess-view--spreadsheet-program
       (progn
 	(let*
