@@ -40,6 +40,14 @@ When you've finished modifying the datasets, save the file (depending on the spr
 be asked if you want to save the file as a *csv* file and/or you want to overwrite the original file: the answer to
 both question is *yes*).
 
+By default `row.names` of the dataframe are not exported; if you want to see the dataframe with its row names, you
+need to use the prefix argument 0, i.e. use
+
+    C-u 0 C-x w
+
+or
+
+    C-u 0 C-x q
 
 ## Contributing
 
