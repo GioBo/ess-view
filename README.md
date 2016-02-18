@@ -41,7 +41,7 @@ be asked if you want to save the file as a *csv* file and/or you want to overwri
 both question is *yes*).
 
 By default `row.names` of the dataframe are not exported; if you want to see the dataframe with its row names, you
-need to use the prefix argument 0, i.e. use
+need to use the prefix argument `0` (zero), i.e. use
 
     C-u 0 C-x w
 
