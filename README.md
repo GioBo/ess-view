@@ -19,6 +19,9 @@ but when working with quite big datasets I personally prefer to use a spreadshee
 
     M-x package-install [RET] ess-view [RET]
 
+and then add, to you `.emacs` file:
+
+    (require 'ess-view)
 
 
 ## Usage
