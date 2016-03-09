@@ -271,7 +271,7 @@ this prefix arg."
   :lighter " ess-v"
   :keymap (let ((map (make-sparse-keymap)))
 	    (define-key map (kbd "C-x w") 'ess-view-inspect-df)
-	    (define-key map (kbd "C-x q") 'ess-view-modify-df)
+	    (define-key map (kbd "C-x q") 'ess-view-inspect-df)
 	    map))
 
 
