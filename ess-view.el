@@ -140,7 +140,7 @@ Argument STRINGCMD  is the command - as a string - to be passed to the R process
 
 
 (defun ess-view-write--sentinel (process signal)
-  "Chech the spreadsheet (PROCESS) to intercepts when it is closed (SIGNAL).
+  "Check the spreadsheet (PROCESS) to intercept when it is closed (SIGNAL).
 The saved version of the file - in the csv fomat -is than converted back
 to the R dataframe."
   (cond
@@ -219,7 +219,7 @@ the row names of the dataframe as well."
 (defun ess-view-check-separator (file-path)
   "Try to convert the tmp file to the csv format.
 This is a tentative strategy to obtain a csv content from the file - specified
-by FILE-PATH - separated by commas, reagardless of the default field separator
+by FILE-PATH - separated by commas, regardless of the default field separator
 used by the spreadsheet software."
   (let ((testo (s-split "\n" (f-read file-path) t)))
     (setq testo (mapcar (lambda (x) (s-replace-all '(("\t" . ",") ("|" . ",") (";" . ",")) x)) testo))
@@ -264,7 +264,7 @@ this prefix arg."
 
 
 (define-minor-mode ess-view-mode
-  "Have a look ad dataframes."
+  "Have a look at dataframes."
   :lighter " ess-v"
   :keymap (let ((map (make-sparse-keymap)))
 	    (define-key map (kbd "C-x w") 'ess-view-inspect-df)
