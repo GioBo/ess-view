@@ -109,13 +109,13 @@ an external spreadsheet sofware to look at its content."
 
 
 (defun ess-view-random-string ()
-  "This function create a random string of 20 characters."
+  "Create a string of 20 random characters."
   (interactive)
-  (setq ess-view--rand-str "")
-  (let ((mycharset '("a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q" "r" "s" "t" "y" "v" "w" "x" "y" "z")))
+  (setq ess-view--rand-str (make-string 20 0))
+  (let ((mycharset "abcdefghijklmnopqrstuvwxyz"))
     (dotimes (i 20)
-      (setq ess-view--rand-str (concat ess-view--rand-str (elt mycharset (random (length mycharset)))))))
-  ess-view--rand-str)
+      (aset ess-view--rand-str i (elt mycharset (random (length mycharset)))))
+    ess-view--rand-str))
 
 
 (defun ess-view-create-env ()
