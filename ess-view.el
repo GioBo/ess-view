@@ -70,6 +70,7 @@
 (require 'f)
 (require 's)
 
+
 (defvar ess-view--spreadsheet-program (or
 				       (executable-find "libreoffice")
 				       (executable-find "openoffice")
@@ -103,8 +104,7 @@
   "Print content of vector OBJ in another buffer.
 In case the passed object is a vector it is not convenient to use
 an external spreadsheet sofware to look at its content."
-  (let
-      ((header (concat obj " contains the following elements: \n")))
+  (let ((header (concat obj " contains the following elements: \n")))
     (ess-execute (concat "cat(" obj ",sep='\n')") nil "*BUFF*" header)))
 
 
@@ -123,17 +123,13 @@ an external spreadsheet sofware to look at its content."
 This is done in order not to pollute user's environments with a temporary
 copy of the passed object which is used to create the temporary .csv file."
   (interactive)
-  (let*
-      ((nome-env
-	(ess-view-random-string)))
+  (let ((nome-env (ess-view-random-string)))
     ;; it is very unlikely that the user has an environment which
     ;; has the same name of our random generated 20-char string,
     ;; but just to be sure, we run this cycle recursively
     ;; until we find an environment name which does not exist yet
-    (if
-	(ess-boolean-command
-	 (concat "is.environment(" nome-env ")\n"))
-	(ess-view-create-env))
+    (if (ess-boolean-command (concat "is.environment(" nome-env ")\n"))
+        (ess-view-create-env))
     nome-env))
 
 
@@ -141,6 +137,7 @@ copy of the passed object which is used to create the temporary .csv file."
   "A wrapper function to send commands to the R process.
 Argument STRINGCMD  is the command - as a string - to be passed to the R process."
   (ess-send-string (get-process "R") STRINGCMD nil))
+
 
 (defun ess-view-write--sentinel (process signal)
   "Chech the spreadsheet (PROCESS) to intercepts when it is closed (SIGNAL).
@@ -151,7 +148,8 @@ to the R dataframe."
     (progn
       (ess-view-check-separator ess-view-temp-file)
       (ess-view-send-to-R (format "%s <- read.table('%s',header=TRUE,sep=',',stringsAsFactors=FALSE)\n" ess-view-oggetto ess-view-temp-file))))))
-  
+
+
 (defun ess-view-clean-data-frame (obj)
   "This function cleans the dataframe of interest.
 Factors are converted to characters (less problems when exporting), NA and
@@ -161,6 +159,7 @@ Argument OBJ is the name of the dataframe to be cleaned."
   (ess-view-send-to-R (format "%s[sapply(%s,is.factor)]<-lapply(%s[sapply(%s,is.factor)],as.character)" obj obj obj obj))
   (ess-view-send-to-R (format "%s[is.na(%s)]<-''\n" obj obj))
   (ess-view-send-to-R (format "%s[%s=='NA']<-''\n" obj obj)))
+
 
 (defun ess-view-data-frame-view (object save row-names)
   "This function is used in case the passed OBJECT is a data frame.
@@ -217,17 +216,15 @@ the row names of the dataframe as well."
     (pop-to-buffer "*ess-view-error*")))
 
 
-
-(defun ess-view-check-separator (filePath)
+(defun ess-view-check-separator (file-path)
   "Try to convert the tmp file to the csv format.
 This is a tentative strategy to obtain a csv content from the file - specified
-by FILEPATH - separated by commas, reagardless of the default field separator
+by FILE-PATH - separated by commas, reagardless of the default field separator
 used by the spreadsheet software."
-  (let
-      ((testo (s-split "\n" (f-read filePath) t)))
+  (let ((testo (s-split "\n" (f-read file-path) t)))
     (setq testo (mapcar (lambda (x) (s-replace-all '(("\t" . ",") ("|" . ",") (";" . ",")) x)) testo))
     (setq testo (s-join "\n" testo))
-    (f-write-text testo 'utf-8 filePath)))
+    (f-write-text testo 'utf-8 file-path)))
 
 
 (defun ess-view-inspect-df (&optional ess-view-row)
