@@ -97,8 +97,6 @@
 (defvar ess-view-spr-proc
   "Process of the called spreadsheet software.")
 
-(defvar ess-view--save nil
-  "Test if user want to midify the dataframe within the spreadsheet.")
 
 (defun ess-view-print-vector (obj)
   "Print content of vector OBJ in another buffer.
@@ -227,40 +225,42 @@ used by the spreadsheet software."
     (f-write-text testo 'utf-8 file-path)))
 
 
-(defun ess-view-inspect-df (&optional ess-view-row)
-  "Call other functions to inspect or save a dataframe.
-This function is bound to both \\C-\\x w and \\C-\\x q and according to the
-keybinding used, it either show the dataframe or shown AND later store
-it back in the R dataframe.
-If user wants the row names of the dataframe to be exported, then the prefix
-argument 0 must be provided before calling the function (eg. by using
-\\C-\\u 0 \\C-\\x w): the argument ESS-VIEW-ROW takes care of storing
-this prefix arg."
-  (interactive "P")
-  (if (eq ess-view-row 0)
-      (setq ess-view-row t)
-    (setq ess-view-row nil))
+(defun ess-view-inspect-df-inner (row-names save)
+  "Show a dataframe.
+If ROW-NAMES is t, the row names of the dataframe are also exported.
+If SAVE is t, it also saves back the result."
   (if ess-view--spreadsheet-program
       (progn
-	(let*
-	    ((codes (key-description (this-command-keys-vector)))
-	     (called (make-string 1 (aref codes (1- (length codes))))))
-	  (if (equal called "w")
-	      (setq ess-view--save nil)
-	    (setq ess-view--save t))
-	  (setq ess-view-oggetto (ess-read-object-name "name of R object:"))
-	  (setq ess-view-oggetto (substring-no-properties (car ess-view-oggetto)))
-	  (cond
-	   ((ess-boolean-command (concat "exists(" ess-view-oggetto ")\n")) (message "The object does not exists"))
-	   ((ess-boolean-command (concat "is.vector(" ess-view-oggetto ")\n")) (ess-view-print-vector ess-view-oggetto))
-	   ((ess-boolean-command (concat "is.data.frame(" ess-view-oggetto ")\n")) (ess-view-data-frame-view ess-view-oggetto ess-view--save ess-view-row))
-	   (t (message "the object is neither a vector or a data.frame; don't know how to show it...")))))
+        (setq ess-view-oggetto (ess-read-object-name "name of R object:"))
+        (setq ess-view-oggetto (substring-no-properties (car ess-view-oggetto)))
+        (cond
+         ((ess-boolean-command (concat "exists(" ess-view-oggetto ")\n"))
+          (message "The object does not exists"))
+         ((ess-boolean-command (concat "is.vector(" ess-view-oggetto ")\n"))
+          (ess-view-print-vector ess-view-oggetto))
+         ((ess-boolean-command (concat "is.data.frame(" ess-view-oggetto ")\n"))
+          (ess-view-data-frame-view ess-view-oggetto save row-names))
+         (t
+          (message "the object is neither a vector or a data.frame; don't know how to show it..."))))
     (ess-no-program)))
 
 
-(global-set-key (kbd "C-x w") 'ess-view-inspect-df)
-(global-set-key (kbd "C-x q") 'ess-view-inspect-df)
+(defun ess-view-inspect-df (&optional row-names)
+  "Show a dataframe.
+If ROW-NAMES is t, the row names of the dataframe are also exported."
+  (interactive "P")
+  (ess-view-inspect-df-inner (if (eq row-names 0) t nil) nil))
 
+
+(defun ess-view-inspect-and-save-df (&optional row-names)
+  "Show a dataframe and save the result.
+If ROW-NAMES is t, the row names of the dataframe are also exported."
+  (interactive "P")
+  (ess-view-inspect-df-inner (if (eq row-names 0) t nil) t))
+
+
+(global-set-key (kbd "C-x w") 'ess-view-inspect-df)
+(global-set-key (kbd "C-x q") 'ess-view-inspect-and-save-df)
 
 
 (define-minor-mode ess-view-mode
@@ -268,7 +268,7 @@ this prefix arg."
   :lighter " ess-v"
   :keymap (let ((map (make-sparse-keymap)))
 	    (define-key map (kbd "C-x w") 'ess-view-inspect-df)
-	    (define-key map (kbd "C-x q") 'ess-view-inspect-df)
+	    (define-key map (kbd "C-x q") 'ess-view-inspect-and-save-df)
 	    map))
 
 
