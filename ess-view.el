@@ -162,31 +162,17 @@ Argument OBJ is the name of the dataframe to be cleaned."
   (ess-view-send-to-R R-PROCESS (format "%s[%s=='NA']<-''\n" obj obj)))
 
 
-(defun ess-view-get-process()
-  "Cheks how many R sessions are currently running in Emacs.
-In case multiple sessions are found, user is asked which one
-should be used (i.e. contains the R object to be viewed).
-"
+(defun ess-view-extract-R-process ()
+"Return the name of R running in current buffer."
   (let*
-      (
-       ;; get the names of all the running processes
-       (ess-view-list-of-running-processes (--map (prin1-to-string it) (process-list) ))
-       ;; select only the names of the running R sessions
-       (ess-view-list-of-running-R-processes (-non-nil (--map (s-match "^#<process \\(R:?[0-9]*\\)>$" it) ess-view-list-of-running-processes)))
-       (chosen-R-process
-	;; if there's only one R process running, use that,
-	;; otherwise ask the user which one should be used
-	(if (= (length ess-view-list-of-running-R-processes) 1)
-	    (cdr (nth 0 ess-view-list-of-running-R-processes))
-	  (ido-completing-read
-	   "Which R session should be used?  "
-	   (--map (nth 1 it) ess-view-list-of-running-R-processes)))
-	)
-       )
-    (car (-flatten ess-view-chosen-R-process))
+      ((proc (get-buffer-process (current-buffer)))
+       (string-proc (prin1-to-string proc))
+       (selected-proc (s-match "^#<process \\(R:?[0-9]*\\)>$" string-proc)))
+    (nth 1 (-flatten selected-proc))
     )
   )
 
+  
 
 (defun ess-view-data-frame-view (object save row-names dframe)
   "This function is used in case the passed OBJECT is a data frame.
@@ -204,8 +190,8 @@ it is not cleaned."
     (let
 	((envir (ess-view-create-env))
 	 (win-place (current-window-configuration))
-	 (R-process (ess-view-get-process)))
-
+	 (R-process (ess-view-extract-R-process))
+	 )
       
       (setq ess-view-chosen-R-process R-process)
       (ess-view-send-to-R ess-view-chosen-R-process (concat envir "<-new.env()\n"))
