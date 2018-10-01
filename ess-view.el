@@ -131,10 +131,11 @@ copy of the passed object which is used to create the temporary .csv file."
     nome-env))
 
 
-(defun ess-view-send-to-R (STRINGCMD)
+
+(defun ess-view-send-to-R (R-PROCESS STRINGCMD)
   "A wrapper function to send commands to the R process.
 Argument STRINGCMD  is the command - as a string - to be passed to the R process."
-  (ess-send-string (get-process "R") STRINGCMD nil))
+  (ess-send-string (get-process R-PROCESS) STRINGCMD nil))
 
 
 (defun ess-view-write--sentinel (process signal)
@@ -145,19 +146,33 @@ to the R dataframe."
    ((equal signal "finished\n")
     (progn
       (ess-view-check-separator ess-view-temp-file)
-      (ess-view-send-to-R (format "%s <- read.table('%s',header=TRUE,sep=',',stringsAsFactors=FALSE)\n" ess-view-oggetto ess-view-temp-file))))))
+      (ess-view-send-to-R ess-view-chosen-R-process (format "%s <- read.table('%s',header=TRUE,sep=',',stringsAsFactors=FALSE)\n" ess-view-oggetto ess-view-temp-file))))))
 
 
-(defun ess-view-clean-data-frame (obj)
+(defun ess-view-clean-data-frame (R-PROCESS obj)
   "This function cleans the dataframe of interest.
 Factors are converted to characters (less problems when exporting), NA and
 'NA' are removed so that reading the dataset within the spreadsheet software
 is clearer.
+Argument R-PROCESS is the running R process where
+the dataframe of interest is to be found.
 Argument OBJ is the name of the dataframe to be cleaned."
-  (ess-view-send-to-R (format "%s[sapply(%s,is.factor)]<-lapply(%s[sapply(%s,is.factor)],as.character)" obj obj obj obj))
-  (ess-view-send-to-R (format "%s[is.na(%s)]<-''\n" obj obj))
-  (ess-view-send-to-R (format "%s[%s=='NA']<-''\n" obj obj)))
+  (ess-view-send-to-R R-PROCESS (format "%s[sapply(%s,is.factor)]<-lapply(%s[sapply(%s,is.factor)],as.character)" obj obj obj obj))
+  (ess-view-send-to-R R-PROCESS (format "%s[is.na(%s)]<-''\n" obj obj))
+  (ess-view-send-to-R R-PROCESS (format "%s[%s=='NA']<-''\n" obj obj)))
 
+
+(defun ess-view-extract-R-process ()
+"Return the name of R running in current buffer."
+  (let*
+      ((proc (get-buffer-process (current-buffer)))
+       (string-proc (prin1-to-string proc))
+       (selected-proc (s-match "^#<process \\(R:?[0-9]*\\)>$" string-proc)))
+    (nth 1 (-flatten selected-proc))
+    )
+  )
+
+  
 
 (defun ess-view-data-frame-view (object save row-names dframe)
   "This function is used in case the passed OBJECT is a data frame.
@@ -174,24 +189,27 @@ it is not cleaned."
     ;; create a temp environment where we will work
     (let
 	((envir (ess-view-create-env))
-	 (win-place (current-window-configuration)))
-
-      (ess-send-string (get-process "R") (concat envir "<-new.env()\n") nil)
+	 (win-place (current-window-configuration))
+	 (R-process (ess-view-extract-R-process))
+	 )
+      
+      (setq ess-view-chosen-R-process R-process)
+      (ess-view-send-to-R ess-view-chosen-R-process (concat envir "<-new.env()\n"))
       ;; create a copy of the passed object in the custom environment
-      (ess-send-string (get-process "R") (concat envir "$obj<-" object "\n") nil)
+      (ess-view-send-to-R ess-view-chosen-R-process (concat envir "$obj<-" object "\n"))
       ;; create a variable containing the complete name of the object
       ;; (in the form environm$object
       (setq ess-view-newobj (concat envir "$obj"))
       ;; remove NA and NAN so that objects is easier to read in spreadsheet file
       (if dframe
-	  (ess-view-clean-data-frame ess-view-newobj))
+	  (ess-view-clean-data-frame R-process ess-view-newobj))
       ;; create a csv temp file
       (setq ess-view-temp-file (make-temp-file nil nil ".csv"))
       (if row-names (setq row-names "row.names=TRUE,col.names=NA")
 	(setq row-names "row.names=FALSE"))
       ;; write the passed object to the csv tempfile
       (setq ess-view-string-command (concat "write.table(" ess-view-newobj ",file='" ess-view-temp-file "',sep=','," row-names ")\n"))
-      (ess-send-string (get-process "R") ess-view-string-command)
+      (ess-view-send-to-R ess-view-chosen-R-process ess-view-string-command)
       ;; wait a little just to be sure that the file has been written (is this necessary? to be checked)
       (sit-for 1)
 
@@ -202,7 +220,7 @@ it is not cleaned."
 
       (set-window-configuration win-place)
       ;; remove the temporary environment
-      (ess-send-string (get-process "R") (format "rm(%s)" envir)))))
+      (ess-view-send-to-R ess-view-chosen-R-process (format "rm(%s)" envir)))))
 
 
 (defun ess-no-program ()
