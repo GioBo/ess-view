@@ -15,7 +15,7 @@ but when working with quite big datasets I personally prefer to use a spreadshee
  
 ## Installing
 
-`ess-view` is available through MELPA, so, if you can install it using:
+`ess-view` is available through MELPA, so you can install it using:
 
     M-x package-install [RET] ess-view [RET]
 
@@ -27,11 +27,11 @@ and then add, to your `.emacs` file:
 ## Usage
 
 	
-If you want to have a look at a dataframe simply hit (a buffer running a **R** process)
+If you want to have a look at a dataframe simply hit (within a buffer running a **R** process)
 
     C-x w
 
- and you will be asked for the name of the object (dataframe) to view... it's a simple as that!
+ and you will be asked for the name of the object (dataframe) to view... it's as simple as that!
 
 
 If you would like to modify the dataframe within the spreadsheet software and then have the modified version
