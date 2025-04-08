@@ -126,7 +126,7 @@ copy of the passed object which is used to create the temporary .csv file."
     ;; has the same name of our random generated 20-char string,
     ;; but just to be sure, we run this cycle recursively
     ;; until we find an environment name which does not exist yet
-    (if (ess-boolean-command (concat "is.environment(" nome-env ")\n"))
+    (if (ess-boolean-command (concat "is.environment(\"" nome-env "\")\n"))
         (ess-view-create-env))
     nome-env))
 
