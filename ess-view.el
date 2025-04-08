@@ -256,8 +256,8 @@ If SAVE is t, it also saves back the result."
         (setq ess-view-oggetto (ess-read-object-name "name of R object:"))
         (setq ess-view-oggetto (substring-no-properties (car ess-view-oggetto)))
         (cond
-         ((ess-boolean-command (concat "exists(" ess-view-oggetto ")\n"))
-          (message "The object does not exists"))
+         ((not (ess-boolean-command (concat "exists(\"" ess-view-oggetto "\")\n")))
+          (message "The object does not exist"))
          ((ess-boolean-command (concat "is.vector(" ess-view-oggetto ")\n"))
           (ess-view-print-vector ess-view-oggetto))
          ((ess-boolean-command (concat "is.data.frame(" ess-view-oggetto ")\n"))
