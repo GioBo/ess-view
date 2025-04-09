@@ -126,7 +126,7 @@ copy of the passed object which is used to create the temporary .csv file."
     ;; has the same name of our random generated 20-char string,
     ;; but just to be sure, we run this cycle recursively
     ;; until we find an environment name which does not exist yet
-    (if (ess-boolean-command (concat "is.environment(" nome-env ")\n"))
+    (if (ess-boolean-command (concat "is.environment(\"" nome-env "\")\n"))
         (ess-view-create-env))
     nome-env))
 
@@ -256,8 +256,8 @@ If SAVE is t, it also saves back the result."
         (setq ess-view-oggetto (ess-read-object-name "name of R object:"))
         (setq ess-view-oggetto (substring-no-properties (car ess-view-oggetto)))
         (cond
-         ((ess-boolean-command (concat "exists(" ess-view-oggetto ")\n"))
-          (message "The object does not exists"))
+         ((not (ess-boolean-command (concat "exists(\"" ess-view-oggetto "\")\n")))
+          (message "The object does not exist"))
          ((ess-boolean-command (concat "is.vector(" ess-view-oggetto ")\n"))
           (ess-view-print-vector ess-view-oggetto))
          ((ess-boolean-command (concat "is.data.frame(" ess-view-oggetto ")\n"))
